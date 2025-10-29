@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import { Task, SyncQueueItem, SyncResult, BatchSyncRequest, BatchSyncResponse } from '../types';
+import { Task, SyncQueueItem, SyncResult, BatchSyncResponse } from '../types';
 import { Database } from '../db/database';
 import { TaskService } from './taskService';
 
@@ -64,7 +64,7 @@ export class SyncService {
               const localTask = JSON.parse(item.data) as Task;
               const resolvedTask = await this.resolveConflict(localTask, responseItem.serverData!);
 
-              await this.taskService.update(resolvedTask.id, resolvedTask);
+              await this.taskService.updateTask(resolvedTask.id, resolvedTask);
               await this.updateSyncStatus(item.task_id, 'synced', resolvedTask);
               result.conflicts++;
 

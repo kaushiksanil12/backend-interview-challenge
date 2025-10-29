@@ -1,23 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-export interface AppError extends Error {
-  statusCode?: number;
-}
-
-export function errorHandler(
-  err: AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  console.error('Error:', err);
-
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-
-  res.status(statusCode).json({
-    error: message,
-    timestamp: new Date().toISOString(),
-    path: req.path,
-  });
+// Remove 'req' if unused, or prefix with _
+export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
 }

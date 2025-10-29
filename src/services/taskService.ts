@@ -12,7 +12,7 @@ export class TaskService {
       id: taskId,
       title: taskData.title || '',
       description: taskData.description || '',
-      completed: false,
+      completed: taskData.completed ?? false,
       is_deleted: false,
       sync_status: 'pending',
       created_at: now,
@@ -20,38 +20,23 @@ export class TaskService {
       last_synced_at: null,
       server_id: null
     };
-
     await this.db.run(
-      `INSERT INTO tasks (
-        id, title, description, completed, is_deleted, 
-        sync_status, created_at, updated_at, last_synced_at, server_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tasks (id, title, description, completed, is_deleted, sync_status, created_at, updated_at, last_synced_at, server_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        task.id,
-        task.title,
-        task.description,
-        task.completed ? 1 : 0,
-        task.is_deleted ? 1 : 0,
-        task.sync_status,
-        task.created_at,
-        task.updated_at,
-        task.last_synced_at,
-        task.server_id
+        task.id, task.title, task.description, task.completed ? 1 : 0, 0,
+        task.sync_status, task.created_at, task.updated_at, null, null
       ]
     );
-
     return task;
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
     const existingTask = await this.getTask(id);
     if (!existingTask) return null;
-
     const now = new Date().toISOString();
-
     const updateFields: string[] = [];
     const params: any[] = [];
-
     if (updates.title !== undefined) {
       updateFields.push('title = ?');
       params.push(updates.title);
@@ -69,18 +54,15 @@ export class TaskService {
     updateFields.push('sync_status = ?');
     params.push('pending');
     params.push(id);
-
     await this.db.run(
       `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ?`, params
     );
-
     return await this.getTask(id);
   }
 
   async deleteTask(id: string): Promise<boolean> {
     const existingTask = await this.getTask(id);
     if (!existingTask) return false;
-
     const now = new Date().toISOString();
     await this.db.run(
       `UPDATE tasks
