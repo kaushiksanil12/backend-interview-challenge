@@ -73,6 +73,19 @@ export class SyncService {
     };
   }
 
+  // Add this method to your SyncService class:
+public async processBatch(items: any[]): Promise<any> {
+  // Minimal stub - you can fill out with your batch sync logic
+  return {
+    results: items.map(item => ({
+      localId: item.localId,
+      success: true,
+      data: item.data
+    }))
+  };
+}
+
+
   // Simulate health check correctly for tests
   async checkConnectivity(): Promise<boolean> {
     try {
