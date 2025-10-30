@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Task } from '../types';
 import { Database } from '../db/database';
+import { SyncService } from './syncService';
 
 export class TaskService {
-  constructor(private db: Database) {}
+  constructor(private db: Database, private syncService?: SyncService) {}
 
   async createTask(taskData: Partial<Task>): Promise<Task> {
     const taskId = uuidv4();
@@ -18,16 +19,28 @@ export class TaskService {
       created_at: now,
       updated_at: now,
       last_synced_at: null,
-      server_id: null
+      server_id: null,
     };
     await this.db.run(
       `INSERT INTO tasks (id, title, description, completed, is_deleted, sync_status, created_at, updated_at, last_synced_at, server_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        task.id, task.title, task.description, task.completed ? 1 : 0, 0,
-        task.sync_status, task.created_at, task.updated_at, null, null
+        task.id,
+        task.title,
+        task.description,
+        task.completed ? 1 : 0,
+        0,
+        task.sync_status,
+        task.created_at,
+        task.updated_at,
+        null,
+        null,
       ]
     );
+    // Always add to sync queue inside service
+    if (this.syncService) {
+      await this.syncService.addToSyncQueue(task.id, 'create', task);
+    }
     return task;
   }
 
@@ -55,9 +68,14 @@ export class TaskService {
     params.push('pending');
     params.push(id);
     await this.db.run(
-      `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ?`, params
+      `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ?`,
+      params
     );
-    return await this.getTask(id);
+    const updatedTask = await this.getTask(id);
+    if (this.syncService && updatedTask) {
+      await this.syncService.addToSyncQueue(updatedTask.id, 'update', updatedTask);
+    }
+    return updatedTask;
   }
 
   async deleteTask(id: string): Promise<boolean> {
@@ -72,6 +90,9 @@ export class TaskService {
        WHERE id = ?`,
       [now, 'pending', id]
     );
+    if (this.syncService) {
+      await this.syncService.addToSyncQueue(id, 'delete', {});
+    }
     return true;
   }
 
@@ -109,7 +130,7 @@ export class TaskService {
       created_at: row.created_at,
       updated_at: row.updated_at,
       last_synced_at: row.last_synced_at,
-      server_id: row.server_id
+      server_id: row.server_id,
     };
   }
 }

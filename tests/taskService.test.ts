@@ -2,15 +2,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Database } from '../src/db/database';
 import { TaskService } from '../src/services/taskService';
 import { Task } from '../src/types';
+import { SyncService } from '../src/services/syncService';
+
 
 describe('TaskService', () => {
   let db: Database;
   let taskService: TaskService;
 
+  let syncService: SyncService;
   beforeEach(async () => {
     db = new Database(':memory:');
     await db.initialize();
-    taskService = new TaskService(db);
+    syncService = new SyncService(db);
+    taskService = new TaskService(db, syncService);
   });
 
   afterEach(async () => {

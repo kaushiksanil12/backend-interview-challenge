@@ -11,8 +11,8 @@ describe('Integration Tests', () => {
   beforeEach(async () => {
     db = new Database(':memory:');
     await db.initialize();
-    taskService = new TaskService(db);
-    syncService = new SyncService(db, taskService);
+    syncService = new SyncService(db);
+    taskService = new TaskService(db, syncService);
   });
 
   afterEach(async () => {
